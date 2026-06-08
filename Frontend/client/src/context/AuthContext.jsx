@@ -1,173 +1,40 @@
-import { createContext, useContext, useState } from "react";
-
-import { demoUsers } from "../data/demoUsers";
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../services/api";
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEYS = {
-  users: "sheba_users",
   currentUser: "sheba_user",
   token: "sheba_token",
 };
 
-function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
-}
-
-function createUserId() {
-  return `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function removePassword(user) {
-  if (!user) {
-    return null;
-  }
-
-  const { password, ...safeUser } = user;
-  return safeUser;
-}
-
-function getStoredUsers() {
-  try {
-    const users = localStorage.getItem(STORAGE_KEYS.users);
-
-    if (!users) {
-      localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(demoUsers));
-      return demoUsers;
-    }
-
-    return JSON.parse(users);
-  } catch {
-    localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(demoUsers));
-    return demoUsers;
-  }
-}
-
 function getStoredCurrentUser() {
   try {
     const user = localStorage.getItem(STORAGE_KEYS.currentUser);
-    const parsedUser = user ? JSON.parse(user) : null;
-
-    if (!parsedUser || !parsedUser.id) {
-      return null;
-    }
-
-    return parsedUser;
+    return user ? JSON.parse(user) : null;
   } catch {
     return null;
   }
 }
 
+function getStoredToken() {
+  return localStorage.getItem(STORAGE_KEYS.token) || "";
+}
+
 export function AuthProvider({ children }) {
-  const [users, setUsers] = useState(() => getStoredUsers());
   const [user, setUser] = useState(() => getStoredCurrentUser());
-  const [token, setToken] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.token) || ""
-  );
+  const [token, setToken] = useState(() => getStoredToken());
+  const [loading, setLoading] = useState(true);
 
-  const saveUsers = (updatedUsers) => {
-    setUsers(updatedUsers);
-    localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(updatedUsers));
-  };
-
-  const saveCurrentUser = (safeUser, userToken) => {
-    setUser(safeUser);
+  const saveAuth = (loggedInUser, userToken) => {
+    setUser(loggedInUser);
     setToken(userToken);
 
-    localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(safeUser));
+    localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(loggedInUser));
     localStorage.setItem(STORAGE_KEYS.token, userToken);
   };
 
-  const login = ({ email, password }) => {
-    const cleanEmail = normalizeEmail(email);
-
-    const foundUser = users.find(
-      (item) => normalizeEmail(item.email) === cleanEmail
-    );
-
-    if (!foundUser || foundUser.password !== password) {
-      throw new Error("Invalid email or password.");
-    }
-
-    if (foundUser.isBlocked) {
-      throw new Error("Your account is blocked by admin.");
-    }
-
-    const now = new Date().toISOString();
-
-    const updatedUsers = users.map((item) =>
-      item.id === foundUser.id
-        ? {
-            ...item,
-            isLoggedIn: true,
-            lastLogin: now,
-          }
-        : item
-    );
-
-    saveUsers(updatedUsers);
-
-    const loggedInUser = updatedUsers.find((item) => item.id === foundUser.id);
-    const safeUser = removePassword(loggedInUser);
-    const userToken = `demo-token-${loggedInUser.id}`;
-
-    saveCurrentUser(safeUser, userToken);
-
-    return safeUser;
-  };
-
-  const register = ({ name, email, phone, password }) => {
-    const cleanEmail = normalizeEmail(email);
-
-    const alreadyExists = users.some(
-      (item) => normalizeEmail(item.email) === cleanEmail
-    );
-
-    if (alreadyExists) {
-      throw new Error("This email is already registered.");
-    }
-
-    const now = new Date().toISOString();
-
-    const newUser = {
-      id: createUserId(),
-      name,
-      email: cleanEmail,
-      phone,
-      password,
-      role: "customer",
-      isBlocked: false,
-      isLoggedIn: true,
-      createdAt: now,
-      lastLogin: now,
-    };
-
-    const updatedUsers = [...users, newUser];
-
-    saveUsers(updatedUsers);
-
-    const safeUser = removePassword(newUser);
-    const userToken = `demo-token-${newUser.id}`;
-
-    saveCurrentUser(safeUser, userToken);
-
-    return safeUser;
-  };
-
-  const logout = () => {
-    if (user) {
-      const updatedUsers = users.map((item) =>
-        item.id === user.id
-          ? {
-              ...item,
-              isLoggedIn: false,
-            }
-          : item
-      );
-
-      saveUsers(updatedUsers);
-    }
-
+  const clearAuth = () => {
     setUser(null);
     setToken("");
 
@@ -175,71 +42,123 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEYS.token);
   };
 
-  const toggleUserBlock = (userId) => {
-    const targetUser = users.find((item) => item.id === userId);
+  const login = async ({ email, password }) => {
+    try {
+      const { data } = await api.post("/users/login", {
+        email,
+        password,
+      });
 
-    if (!targetUser) {
-      return;
+      if (!data.success) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      saveAuth(data.user, data.token);
+
+      return data.user;
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || "Login failed";
+      throw new Error(message);
     }
-
-    if (targetUser.role === "admin") {
-      alert("Admin account cannot be blocked.");
-      return;
-    }
-
-    const updatedUsers = users.map((item) =>
-      item.id === userId
-        ? {
-            ...item,
-            isBlocked: !item.isBlocked,
-            isLoggedIn: item.isBlocked ? item.isLoggedIn : false,
-          }
-        : item
-    );
-
-    saveUsers(updatedUsers);
   };
 
-  const deleteUser = (userId) => {
-    const targetUser = users.find((item) => item.id === userId);
+  const register = async ({ name, email, phone, address, password }) => {
+    try {
+      const { data } = await api.post("/users/register", {
+        name,
+        email,
+        phone,
+        address,
+        password,
+      });
 
-    if (!targetUser) {
-      return;
+      if (!data.success) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      saveAuth(data.user, data.token);
+
+      return data.user;
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || "Registration failed";
+      throw new Error(message);
     }
-
-    if (targetUser.role === "admin") {
-      alert("Admin account cannot be deleted.");
-      return;
-    }
-
-    const updatedUsers = users.filter((item) => item.id !== userId);
-    saveUsers(updatedUsers);
   };
 
-  const markUserLoggedOut = (userId) => {
-    const updatedUsers = users.map((item) =>
-      item.id === userId
-        ? {
-            ...item,
-            isLoggedIn: false,
-          }
-        : item
-    );
+  const getProfile = async () => {
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.token)) {
+        setLoading(false);
+        return null;
+      }
 
-    saveUsers(updatedUsers);
+      const { data } = await api.get("/users/profile");
+
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem(
+          STORAGE_KEYS.currentUser,
+          JSON.stringify(data.user)
+        );
+        return data.user;
+      }
+
+      clearAuth();
+      return null;
+    } catch {
+      clearAuth();
+      return null;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const updateProfile = async ({ name, phone, address }) => {
+    try {
+      const { data } = await api.put("/users/profile", {
+        name,
+        phone,
+        address,
+      });
+
+      if (!data.success) {
+        throw new Error(data.message || "Profile update failed");
+      }
+
+      setUser(data.user);
+      localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(data.user));
+
+      return data.user;
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Profile update failed";
+      throw new Error(message);
+    }
+  };
+
+  const logout = () => {
+    clearAuth();
+  };
+
+  useEffect(() => {
+    getProfile();
+  }, []);
 
   const value = {
-    users,
     user,
     token,
-    isAuthenticated: Boolean(user),
+    loading,
+    isAuthenticated: Boolean(user && token),
+    isAdmin: user?.role === "admin",
     login,
     register,
     logout,
-    toggleUserBlock,
-    deleteUser,
-    markUserLoggedOut,
+    getProfile,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

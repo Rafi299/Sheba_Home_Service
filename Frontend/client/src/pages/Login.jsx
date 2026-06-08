@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../services/api";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -29,26 +33,19 @@ function Login() {
       setMessage("");
       setIsError(false);
 
-      const response = await api.post("/users/login", formData);
+      const loggedInUser = await login(formData);
 
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
-      window.dispatchEvent(new Event("storage"));
-
-      setMessage(response.data.message || "Login successful");
+      setMessage("Login successful");
       setIsError(false);
 
-      setTimeout(() => {
-        if (response.data.user.role === "admin") {
-          navigate("/admin-dashboard");
-        } else {
-          navigate("/");
-        }
-      }, 700);
+      if (loggedInUser.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       setIsError(true);
-      setMessage(error.response?.data?.message || "Login failed");
+      setMessage(error.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -75,6 +72,7 @@ function Login() {
               <label className="mb-2 block font-bold text-slate-700">
                 Email
               </label>
+
               <input
                 type="email"
                 name="email"
@@ -90,15 +88,27 @@ function Login() {
               <label className="mb-2 block font-bold text-slate-700">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full rounded-2xl border border-slate-200 px-5 py-4 outline-none focus:border-emerald-500"
-              />
+
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-2xl border border-slate-200 px-5 py-4 pr-14 outline-none focus:border-emerald-500"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((previous) => !previous)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
 
             <button

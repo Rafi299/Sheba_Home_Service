@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
+import ScrollToTop from "../components/ScrollToTop";
 
 function DashboardLayout() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,7 +17,17 @@ function DashboardLayout() {
     },
     {
       path: "/admin/users",
-      label: "Clients",
+      label: "Users",
+      end: false,
+    },
+    {
+      path: "/admin/services",
+      label: "Services",
+      end: false,
+    },
+    {
+      path: "/admin/bookings",
+      label: "Bookings",
       end: false,
     },
   ];
@@ -141,6 +152,8 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ScrollToTop />
     </div>
   );
 }

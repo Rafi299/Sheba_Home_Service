@@ -23,6 +23,17 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetails from "./pages/admin/AdminUserDetails";
 
+import AdminServices from "./pages/admin/AdminServices";
+import AdminServiceForm from "./pages/admin/AdminServiceForm";
+
+import AdminBookings from "./pages/admin/AdminBookings";
+
+import MyBookings from "./pages/MyBookings";
+
+import BlogDetails from "./pages/BlogDetails";
+
+
+
 function App() {
   return (
     <Routes>
@@ -33,8 +44,10 @@ function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/services/:slug" element={<ServiceDetails />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-failed" element={<PaymentFailed />} />
       </Route>
@@ -44,10 +57,16 @@ function App() {
 
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<DashboardLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="users/:id" element={<AdminUserDetails />} />
-        </Route>
+  <Route index element={<AdminDashboard />} />
+
+  <Route path="users" element={<AdminUsers />} />
+  <Route path="users/:id" element={<AdminUserDetails />} />
+
+  <Route path="services" element={<AdminServices />} />
+  <Route path="services/new" element={<AdminServiceForm />} />
+  <Route path="services/:id/edit" element={<AdminServiceForm />} />
+  <Route path="bookings" element={<AdminBookings />} />
+</Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />

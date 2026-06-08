@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
 import api from "../services/api";
 
 function Register() {
@@ -13,6 +15,7 @@ function Register() {
     address: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -80,6 +83,7 @@ function Register() {
               <label className="mb-2 block font-bold text-slate-700">
                 Name
               </label>
+
               <input
                 type="text"
                 name="name"
@@ -95,6 +99,7 @@ function Register() {
               <label className="mb-2 block font-bold text-slate-700">
                 Email
               </label>
+
               <input
                 type="email"
                 name="email"
@@ -110,22 +115,35 @@ function Register() {
               <label className="mb-2 block font-bold text-slate-700">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-                className="w-full rounded-2xl border border-slate-200 px-5 py-4 outline-none focus:border-emerald-500"
-              />
+
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full rounded-2xl border border-slate-200 px-5 py-4 pr-14 outline-none focus:border-emerald-500"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((previous) => !previous)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="mb-2 block font-bold text-slate-700">
                 Phone
               </label>
+
               <input
                 type="text"
                 name="phone"
@@ -140,6 +158,7 @@ function Register() {
               <label className="mb-2 block font-bold text-slate-700">
                 Address
               </label>
+
               <textarea
                 name="address"
                 placeholder="Enter your address"

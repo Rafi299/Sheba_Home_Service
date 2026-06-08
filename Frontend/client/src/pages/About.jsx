@@ -1,5 +1,14 @@
 import SectionTitle from "../components/SectionTitle";
 
+const aboutImage =
+  "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=900&q=80";
+
+const fallbackAboutImage =
+  "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80";
+
+const aboutBanner =
+  "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1600&q=80";
+
 function About() {
   const values = [
     "Trusted service experts",
@@ -10,8 +19,17 @@ function About() {
 
   return (
     <>
-      <section className="bg-slate-950 py-20">
-        <div className="container-custom text-center">
+      <section className="relative overflow-hidden bg-slate-950 py-24">
+        <div className="absolute inset-0">
+          <img
+            src={aboutBanner}
+            alt="About Sheba banner"
+            className="h-full w-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-slate-950/75"></div>
+        </div>
+
+        <div className="container-custom relative text-center">
           <p className="mb-4 font-bold text-emerald-400">About Us</p>
 
           <h1 className="mx-auto max-w-4xl text-5xl font-black tracking-tight text-white">
@@ -29,11 +47,11 @@ function About() {
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div className="overflow-hidden rounded-[40px] bg-gradient-to-br from-emerald-100 to-slate-200 p-5">
             <img
-              src="/images/about-team.jpg"
-              alt="About Sheba team"
+              src={aboutImage}
+              alt="Sheba service team helping customers"
               className="h-[450px] w-full rounded-[32px] object-cover"
               onError={(event) => {
-                event.currentTarget.style.display = "none";
+                event.currentTarget.src = fallbackAboutImage;
               }}
             />
           </div>

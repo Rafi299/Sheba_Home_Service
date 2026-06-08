@@ -8,10 +8,45 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    service: {
+    serviceCategory: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
+      ref: "ServiceCategory",
       default: null,
+    },
+
+    serviceOptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+
+    serviceCategoryTitle: {
+      type: String,
+      required: [true, "Service category title is required"],
+      trim: true,
+    },
+
+    serviceTitle: {
+      type: String,
+      required: [true, "Service title is required"],
+      trim: true,
+    },
+
+    servicePrice: {
+      type: Number,
+      required: [true, "Service price is required"],
+      default: 0,
+    },
+
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    totalAmount: {
+      type: Number,
+      required: [true, "Total amount is required"],
+      default: 0,
     },
 
     customerName: {
@@ -38,11 +73,6 @@ const bookingSchema = new mongoose.Schema(
       required: [true, "Customer address is required"],
     },
 
-    serviceTitle: {
-      type: String,
-      required: [true, "Service title is required"],
-    },
-
     bookingDate: {
       type: String,
       required: [true, "Booking date is required"],
@@ -58,17 +88,74 @@ const bookingSchema = new mongoose.Schema(
       default: "",
     },
 
+    adminNote: {
+      type: String,
+      default: "",
+    },
+
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "processing", "completed", "cancelled"],
       default: "pending",
     },
 
+    paymentMethod: {
+  type: String,
+  enum: ["cash", "online", "bkash", "nagad", "card"],
+  default: "cash",
+  },
+
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "paid", "failed"],
+      enum: ["unpaid", "pending", "paid", "failed", "refunded"],
       default: "unpaid",
     },
+
+    transactionId: {
+      type: String,
+      default: "",
+    },
+
+    paymentPhone: {
+      type: String,
+      default: "",
+    },
+
+    paymentScreenshot: {
+      type: String,
+      default: "",
+    },
+
+    cancelledBy: {
+      type: String,
+      enum: ["user", "admin", ""],
+      default: "",
+    },
+
+    cancellationReason: {
+      type: String,
+      default: "",
+    },
+
+    // ─── Review fields ───────────────────────────────────────────
+    review: {
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: null,
+      },
+      comment: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      reviewedAt: {
+        type: Date,
+        default: null,
+      },
+    },
+    // ─────────────────────────────────────────────────────────────
   },
   {
     timestamps: true,

@@ -1,10 +1,23 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
-function getStoredCart() {
+export const MAX_CART_QUANTITY = 10;
+
+function getCartKey(user) {
+  const userId = user?._id || user?.id;
+
+  if (userId) {
+    return `sheba_cart_${userId}`;
+  }
+
+  return "sheba_cart_guest";
+}
+
+function getStoredCart(cartKey) {
   try {
-    const cart = localStorage.getItem("sheba_cart");
+    const cart = localStorage.getItem(cartKey);
     return cart ? JSON.parse(cart) : [];
   } catch {
     return [];
@@ -12,46 +25,94 @@ function getStoredCart() {
 }
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(() => getStoredCart());
+  const { user } = useAuth();
+
+  const [cartKey, setCartKey] = useState(() => getCartKey(user));
+  const [cartItems, setCartItems] = useState(() =>
+    getStoredCart(getCartKey(user))
+  );
 
   useEffect(() => {
-    localStorage.setItem("sheba_cart", JSON.stringify(cartItems));
-  }, [cartItems]);
+    const newCartKey = getCartKey(user);
+
+    setCartKey(newCartKey);
+    setCartItems(getStoredCart(newCartKey));
+  }, [user?._id, user?.id]);
+
+  useEffect(() => {
+    localStorage.setItem(cartKey, JSON.stringify(cartItems));
+  }, [cartItems, cartKey]);
 
   const addToCart = (service) => {
+    let wasLimitReached = false;
+
     setCartItems((previousItems) => {
-      const existingItem = previousItems.find((item) => item.id === service.id);
+      const serviceId = service.id || service._id;
+
+      const existingItem = previousItems.find(
+        (item) => (item.id || item._id) === serviceId
+      );
 
       if (existingItem) {
+        if (existingItem.quantity >= MAX_CART_QUANTITY) {
+          wasLimitReached = true;
+          return previousItems;
+        }
+
         return previousItems.map((item) =>
-          item.id === service.id
+          (item.id || item._id) === serviceId
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
 
-      return [...previousItems, { ...service, quantity: 1 }];
+      return [...previousItems, { ...service, id: serviceId, quantity: 1 }];
     });
+
+    return {
+      success: !wasLimitReached,
+      message: wasLimitReached
+        ? `You can add maximum ${MAX_CART_QUANTITY} quantity for one service.`
+        : "Service added to cart.",
+    };
   };
 
   const removeFromCart = (id) => {
     setCartItems((previousItems) =>
-      previousItems.filter((item) => item.id !== id)
+      previousItems.filter((item) => (item.id || item._id) !== id)
     );
   };
 
   const increaseQuantity = (id) => {
+    let wasLimitReached = false;
+
     setCartItems((previousItems) =>
-      previousItems.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-      )
+      previousItems.map((item) => {
+        if ((item.id || item._id) !== id) {
+          return item;
+        }
+
+        if (item.quantity >= MAX_CART_QUANTITY) {
+          wasLimitReached = true;
+          return item;
+        }
+
+        return { ...item, quantity: item.quantity + 1 };
+      })
     );
+
+    return {
+      success: !wasLimitReached,
+      message: wasLimitReached
+        ? `Maximum ${MAX_CART_QUANTITY} quantity allowed for one service.`
+        : "Quantity updated.",
+    };
   };
 
   const decreaseQuantity = (id) => {
     setCartItems((previousItems) =>
       previousItems.map((item) =>
-        item.id === id && item.quantity > 1
+        (item.id || item._id) === id && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
           : item
       )
@@ -73,6 +134,7 @@ export function CartProvider({ children }) {
     cartItems,
     cartCount,
     cartTotal,
+    maxCartQuantity: MAX_CART_QUANTITY,
     addToCart,
     removeFromCart,
     increaseQuantity,

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { FaFacebookF, FaInstagram, FaTwitter } from "react-icons/fa";
 
 function Footer() {
   const services = [
@@ -9,10 +10,22 @@ function Footer() {
     "Painting",
   ];
 
-  const paymentLogos = [
-    "/images/logos/bkash.png",
-    "/images/logos/nagad.png",
-    "/images/logos/visa.png",
+  const socialLinks = [
+    {
+      name: "Facebook",
+      url: "https://www.facebook.com/login/",
+      icon: <FaFacebookF />,
+    },
+    {
+      name: "Instagram",
+      url: "https://www.instagram.com/accounts/login/",
+      icon: <FaInstagram />,
+    },
+    {
+      name: "Twitter",
+      url: "https://twitter.com/login",
+      icon: <FaTwitter />,
+    },
   ];
 
   return (
@@ -37,12 +50,15 @@ function Footer() {
               <Link className="block hover:text-emerald-400" to="/">
                 Home
               </Link>
+
               <Link className="block hover:text-emerald-400" to="/services">
                 Services
               </Link>
+
               <Link className="block hover:text-emerald-400" to="/about">
                 About
               </Link>
+
               <Link className="block hover:text-emerald-400" to="/contact">
                 Contact
               </Link>
@@ -63,27 +79,31 @@ function Footer() {
             <h3 className="mb-4 text-lg font-bold">Contact</h3>
 
             <div className="space-y-3 text-slate-400">
-              <p>Phone: 01XXXXXXXXX</p>
+              <p>Phone: +8801746058187</p>
               <p>Email: support@sheba.com</p>
               <p>Address: Dhaka, Bangladesh</p>
             </div>
 
-            <div className="mt-5 flex items-center gap-3">
-              {paymentLogos.map((logo) => (
-                <div
-                  key={logo}
-                  className="grid h-10 w-16 place-items-center rounded-lg bg-white/10"
-                >
-                  <img
-                    src={logo}
-                    alt="Payment logo"
-                    className="max-h-7 object-contain"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                </div>
-              ))}
+            <div className="mt-5">
+              <p className="mb-3 text-sm font-bold text-slate-300">
+                Follow Us
+              </p>
+
+              <div className="flex items-center gap-3">
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={social.name}
+                    title={social.name}
+                    className="grid h-10 w-10 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-emerald-600"
+                  >
+                    {social.icon}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>

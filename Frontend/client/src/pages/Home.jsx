@@ -1,15 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import CategoryCard from "../components/CategoryCard";
 import QuoteModal from "../components/QuoteModal";
 import SectionTitle from "../components/SectionTitle";
 import ServiceCard from "../components/ServiceCard";
-
-import { popularServices, servicesData } from "../data/servicesData";
+import api from "../services/api";
 
 function Home() {
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+
+  useEffect(() => {
+    const fetchServiceCategories = async () => {
+      try {
+        setLoadingServices(true);
+
+        const { data } = await api.get("/services");
+
+        setServiceCategories(data.categories || []);
+      } catch (error) {
+        console.error("Failed to load home services:", error);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    fetchServiceCategories();
+  }, []);
+
+  const featuredServices = serviceCategories
+    .flatMap((category) =>
+      (category.services || []).map((service) => ({
+        ...service,
+        categoryId: category._id,
+        categoryTitle: category.title,
+        categorySlug: category.slug,
+        categoryImage: category.image,
+        category,
+      }))
+    )
+    .slice(0, 3);
 
   const steps = [
     {
@@ -74,8 +106,10 @@ function Home() {
 
             <div className="mt-12 grid max-w-xl grid-cols-3 gap-4">
               <div>
-                <h3 className="text-3xl font-black text-white">50+</h3>
-                <p className="text-sm text-slate-400">Services</p>
+                <h3 className="text-3xl font-black text-white">
+                  {serviceCategories.length}+
+                </h3>
+                <p className="text-sm text-slate-400">Categories</p>
               </div>
 
               <div>
@@ -113,7 +147,7 @@ function Home() {
                   </div>
 
                   <Link
-                    to="/services/ac-service"
+                    to="/services"
                     className="block w-full rounded-2xl bg-slate-900 py-4 text-center font-bold text-white hover:bg-slate-800"
                   >
                     Book Now
@@ -132,34 +166,58 @@ function Home() {
           description="Choose from our most requested home service categories."
         />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {servicesData.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </div>
+        {loadingServices ? (
+          <div className="rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+            <h3 className="text-2xl font-black text-slate-900">
+              Loading categories...
+            </h3>
+          </div>
+        ) : serviceCategories.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {serviceCategories.slice(0, 6).map((category) => (
+              <CategoryCard key={category._id} category={category} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+            <h3 className="text-2xl font-black text-slate-900">
+              No categories available
+            </h3>
+          </div>
+        )}
       </section>
 
       <section className="bg-white py-20">
         <div className="container-custom">
           <SectionTitle
-            label="Popular"
-            title="Most booked services"
-            description="These services are frequently booked by customers."
+            label="Featured"
+            title="Featured services"
+            description="Explore some of our available home service options."
           />
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {popularServices.slice(0, 3).map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                category={{
-                  title: service.categoryTitle,
-                  slug: service.categorySlug,
-                  image: service.categoryImage,
-                }}
-              />
-            ))}
-          </div>
+          {loadingServices ? (
+            <div className="rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+              <h3 className="text-2xl font-black text-slate-900">
+                Loading services...
+              </h3>
+            </div>
+          ) : featuredServices.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredServices.map((service) => (
+                <ServiceCard
+                  key={service._id || service.id}
+                  service={service}
+                  category={service.category}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+              <h3 className="text-2xl font-black text-slate-900">
+                No featured services available
+              </h3>
+            </div>
+          )}
         </div>
       </section>
 

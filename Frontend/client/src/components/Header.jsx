@@ -1,41 +1,15 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 function Header() {
   const navigate = useNavigate();
 
-  const [loggedInUser, setLoggedInUser] = useState(null);
-
   const { cartCount } = useCart();
-
-  useEffect(() => {
-    const updateUser = () => {
-      const storedUser = localStorage.getItem("user");
-
-      if (storedUser) {
-        setLoggedInUser(JSON.parse(storedUser));
-      } else {
-        setLoggedInUser(null);
-      }
-    };
-
-    updateUser();
-
-    window.addEventListener("storage", updateUser);
-
-    return () => {
-      window.removeEventListener("storage", updateUser);
-    };
-  }, []);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setLoggedInUser(null);
-    window.dispatchEvent(new Event("storage"));
-
+    logout();
     navigate("/login");
   };
 
@@ -96,20 +70,28 @@ function Header() {
             )}
           </Link>
 
-          {loggedInUser ? (
+          {isAuthenticated ? (
             <>
               <span className="hidden font-bold text-slate-700 sm:inline">
-                Hi, {loggedInUser.name}
+                Hi, {user?.name}
               </span>
 
-              {loggedInUser.role === "admin" && (
+              {user?.role === "admin" && (
                 <Link
-                  to="/admin-dashboard"
+                  to="/admin"
                   className="rounded-xl border border-emerald-200 px-5 py-3 font-bold text-emerald-700 hover:bg-emerald-50"
                 >
                   Dashboard
                 </Link>
               )}
+              {user?.role !== "admin" && (
+  <Link
+    to="/my-bookings"
+    className="rounded-xl border border-emerald-200 px-5 py-3 font-bold text-emerald-700 hover:bg-emerald-50"
+  >
+    My Bookings
+  </Link>
+)}
 
               <button
                 type="button"

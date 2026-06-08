@@ -4,6 +4,9 @@ import CategoryCard from "../components/CategoryCard";
 import SectionTitle from "../components/SectionTitle";
 import api from "../services/api";
 
+const servicesBanner =
+  "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1600&q=80";
+
 function Services() {
   const [searchText, setSearchText] = useState("");
   const [serviceCategories, setServiceCategories] = useState([]);
@@ -42,8 +45,17 @@ function Services() {
 
   return (
     <>
-      <section className="bg-slate-950 py-20">
-        <div className="container-custom text-center">
+      <section className="relative overflow-hidden bg-slate-950 py-24">
+        <div className="absolute inset-0">
+          <img
+            src={servicesBanner}
+            alt="Home service tools banner"
+            className="h-full w-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-slate-950/75"></div>
+        </div>
+
+        <div className="container-custom relative text-center">
           <p className="mb-4 font-bold text-emerald-400">Services</p>
 
           <h1 className="text-5xl font-black tracking-tight text-white">
@@ -90,7 +102,10 @@ function Services() {
         {!loading && !message && filteredServices.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredServices.map((category) => (
-              <CategoryCard key={category._id || category.id} category={category} />
+              <CategoryCard
+                key={category._id || category.id}
+                category={category}
+              />
             ))}
           </div>
         ) : null}

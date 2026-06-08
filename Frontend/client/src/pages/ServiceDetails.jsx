@@ -5,12 +5,32 @@ import SectionTitle from "../components/SectionTitle";
 import ServiceCard from "../components/ServiceCard";
 import api from "../services/api";
 
+// ─── Star display helper ──────────────────────────────────────────────────────
+function Stars({ rating }) {
+  return (
+    <span className="flex gap-0.5 text-lg">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={star <= rating ? "text-yellow-400" : "text-slate-300"}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function ServiceDetails() {
   const { slug } = useParams();
 
   const [serviceCategory, setServiceCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     const fetchServiceCategory = async () => {
@@ -33,12 +53,35 @@ function ServiceDetails() {
     fetchServiceCategory();
   }, [slug]);
 
+  // Fetch reviews once we have the category ID
+  useEffect(() => {
+    if (!serviceCategory?._id) return;
+
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+
+        const response = await api.get(
+          `/bookings/reviews/service/${serviceCategory._id}`
+        );
+
+        setReviews(response.data.reviews || []);
+        setAverageRating(response.data.averageRating || 0);
+        setTotalReviews(response.data.totalReviews || 0);
+      } catch (error) {
+        console.error("Failed to load reviews:", error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [serviceCategory]);
+
   if (loading) {
     return (
       <section className="container-custom py-24 text-center">
-        <h1 className="text-4xl font-black text-slate-900">
-          Loading service...
-        </h1>
+        <h1 className="text-4xl font-black text-slate-900">Loading service...</h1>
       </section>
     );
   }
@@ -46,9 +89,7 @@ function ServiceDetails() {
   if (!serviceCategory) {
     return (
       <section className="container-custom py-24 text-center">
-        <h1 className="text-4xl font-black text-slate-900">
-          Service not found
-        </h1>
+        <h1 className="text-4xl font-black text-slate-900">Service not found</h1>
 
         <p className="mt-4 text-slate-600">
           {message || "The service category you are looking for does not exist."}
@@ -66,6 +107,7 @@ function ServiceDetails() {
 
   return (
     <>
+      {/* ── Hero Banner ────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-slate-950 py-24">
         <div className="absolute inset-0">
           <img
@@ -97,6 +139,7 @@ function ServiceDetails() {
         </div>
       </section>
 
+      {/* ── Features ───────────────────────────────────────────────────────── */}
       <section className="container-custom py-16">
         <div className="grid gap-4 md:grid-cols-4">
           {(serviceCategory.features || []).map((feature) => (
@@ -110,6 +153,7 @@ function ServiceDetails() {
         </div>
       </section>
 
+      {/* ── Service Options ─────────────────────────────────────────────────── */}
       <section className="container-custom pb-20">
         <SectionTitle
           label="Available Options"
@@ -132,9 +176,65 @@ function ServiceDetails() {
             <h3 className="text-2xl font-black text-slate-900">
               No service options available
             </h3>
-            <p className="mt-2 text-slate-600">
-              Please check again later.
+            <p className="mt-2 text-slate-600">Please check again later.</p>
+          </div>
+        )}
+      </section>
+
+      {/* ── Customer Reviews ────────────────────────────────────────────────── */}
+      <section className="container-custom pb-24">
+        <SectionTitle
+          label="Customer Reviews"
+          title="What our customers say"
+          description="Honest reviews from verified customers who used this service."
+        />
+
+        {/* Rating summary */}
+        {totalReviews > 0 && (
+          <div className="mb-8 flex items-center gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="text-center">
+              <p className="text-5xl font-black text-slate-900">{averageRating}</p>
+              <Stars rating={Math.round(averageRating)} />
+              <p className="mt-1 text-sm text-slate-500">{totalReviews} review{totalReviews !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+        )}
+
+        {reviewsLoading ? (
+          <p className="text-slate-500">Loading reviews...</p>
+        ) : reviews.length === 0 ? (
+          <div className="rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+            <p className="text-lg font-bold text-slate-700">No reviews yet</p>
+            <p className="mt-2 text-slate-500">
+              Be the first to review after completing this service!
             </p>
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            {reviews.map((review) => (
+              <div
+                key={review._id}
+                className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-slate-900">{review.customerName}</p>
+                    <p className="text-xs text-slate-400">{review.serviceTitle}</p>
+                  </div>
+                  <Stars rating={review.review.rating} />
+                </div>
+
+                {review.review.comment && (
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {review.review.comment}
+                  </p>
+                )}
+
+                <p className="mt-3 text-xs text-slate-400">
+                  {new Date(review.review.reviewedAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
           </div>
         )}
       </section>
